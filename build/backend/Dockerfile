@@ -2,7 +2,8 @@ FROM golang:1.16.7-alpine3.14 as build
 ENV GOOS linux
 ENV CGO_ENABLED 0
 RUN mkdir /app
-COPY . /app
+COPY /cmd/restapi/main.go /app/cmd/restapi/main.go
+COPY go.mod /app
 WORKDIR /app
 RUN go mod download
 RUN go build -o restapi cmd/restapi/main.go

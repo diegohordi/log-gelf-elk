@@ -44,7 +44,7 @@ services:
     container_name: log_gelf_elk_logstash
     image: docker.elastic.co/logstash/logstash:7.6.2
     depends_on:
-      - log_gelf_elk__elasticsearch
+      - log_gelf_elk_elasticsearch
     volumes:
       - ./../build/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
     ports:
@@ -57,7 +57,7 @@ services:
     container_name: log_gelf_elk_kibana
     image: docker.elastic.co/kibana/kibana:7.6.2
     depends_on:
-      - log_gelf_elk__elasticsearch
+      - log_gelf_elk_elasticsearch
     environment:
       ELASTICSEARCH_URL: http://elasticsearch:9200
       XPACK_SECURITY_ENABLED: "false"
