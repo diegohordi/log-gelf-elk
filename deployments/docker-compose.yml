@@ -1,0 +1,72 @@
+version: '3.4'
+networks:
+  log_gelf_elk:
+services:
+
+  log_gelf_elk_backend:
+    container_name: log_gelf_elk_backend
+    build:
+      context: ./../
+      dockerfile: './build/backend/Dockerfile'
+      target: deploy
+      args:
+        SERVER_PORT: '8081'
+    restart: always
+    environment:
+      SERVER_PORT: '8081'
+    ports:
+      - '8081:8081'
+    networks:
+      - log_gelf_elk
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://localhost:12201"
+        tag: "backend"
+
+  log_gelf_elk_elasticsearch:
+    container_name: log_gelf_elk_elasticsearch
+    hostname: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.2
+    volumes:
+      - ./../build/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    healthcheck:
+      test: [ "CMD", "curl", "-s", "-f", "http://localhost:9200/_cat/health" ]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    ports:
+      - '9200:9200'
+    networks:
+      - log_gelf_elk
+
+  log_gelf_elk_logstash:
+    container_name: log_gelf_elk_logstash
+    image: docker.elastic.co/logstash/logstash:7.6.2
+    depends_on:
+      - log_gelf_elk__elasticsearch
+    volumes:
+      - ./../build/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - "12201:12201/udp"
+      - "5044:5044"
+    networks:
+      - log_gelf_elk
+
+  log_gelf_elk_kibana:
+    container_name: log_gelf_elk_kibana
+    image: docker.elastic.co/kibana/kibana:7.6.2
+    depends_on:
+      - log_gelf_elk__elasticsearch
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      XPACK_SECURITY_ENABLED: "false"
+    healthcheck:
+      test: [ "CMD", "curl", "-s", "-f", "http://localhost:5601/api/status" ]
+      interval: 3s
+      timeout: 3s
+      retries: 50
+    ports:
+      - '5601:5601'
+    networks:
+      - log_gelf_elk
